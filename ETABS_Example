@@ -1,0 +1,71 @@
+Sub ETABS_example()
+'Author: Serag Hassouna
+'Purpose: An ETABS API example as per requested by Eng. Pradip Pokhrel
+
+'*MANDATORY* Get the path of your ETABS shortcut on Desktop, and assign it to ProgPath.
+' Note, in case of need: Chr(34) represents the parantheses character in VBA"
+Dim ProgPath As String
+ProgPath = ""
+'*MANDATORY* Get the Path to the test .edb template named "ETABS_EXP2.edb", and assign it to ModelPath
+Dim ModelPath As String
+ModelPath = ""
+
+'Get the Wscript Object
+Dim Wscr As WshShell, res As Integer
+Set Wscr = CreateObject("Wscript.Shell")
+'Run ETABS
+res = Wscr.Run(ProgPath, 3)
+Application.Wait Now + TimeValue("0:00:15") '15 seconds is just suited to the condition of my computer at startup
+'tune it to the amount of time that suits yours.
+
+'Get the ETABS Object
+Dim myETABSObj As ETABS2016.cOAPI
+
+Set myETABSObj = GetObject(, "CSI.ETABS.API.ETABSObject")
+
+'Initialization
+Dim myModel As ETABS2016.cSapModel
+Set myModel = myETABSObj.SapModel
+Dim ret As Long 'Dimension the Return value for ETABS's API Procedures
+ret = myModel.InitializeNewModel(eUnits_kN_m_C)
+'Open the test template
+ret = myModel.File.OpenFile(ModelPath)
+
+'Define variables for Beams, Columns and Slabs
+Dim A_x(3) As Double, A_y(3) As Double, A_z(3) As Double, i As Integer, FrName As String, SlbName As String
+
+'Draw 3 Beams and 3 Columns
+For i = 0 To 2
+  FrName = "B-No." & Str(i + 1)
+  With Sheet1
+    ret = myModel.FrameObj.AddByCoord(.Cells(3 + i, 2), .Cells(3 + i, 3), _
+    .Cells(3 + i, 4), .Cells(3 + i, 5), .Cells(3 + i, 6), .Cells(3 + i, 7), FrName, "B25X60", FrName)
+  End With
+  FrName = "C-No." & Str(i + 1)
+  With Sheet1
+    ret = myModel.FrameObj.AddByCoord(.Cells(3 + i, 9), .Cells(3 + i, 10), _
+    .Cells(3 + i, 11), .Cells(3 + i, 9), .Cells(3 + i, 10), .Cells(3 + i, 12), FrName, "C25X70", FrName)
+  End With
+Next i
+
+'Draw 2 Slabs
+For i = 0 To 1
+  SlbName = "S-No." & Str(i + 1)
+  With Sheet1
+    A_x(0) = .Cells(10 + 5 * i, 3): A_x(1) = .Cells(11 + 5 * i, 3)
+    A_x(2) = .Cells(12 + 5 * i, 3): A_x(3) = .Cells(13 + 5 * i, 3)
+    
+    A_y(0) = .Cells(10 + 5 * i, 4): A_y(1) = .Cells(11 + 5 * i, 4)
+    A_y(2) = .Cells(12 + 5 * i, 4): A_y(3) = .Cells(13 + 5 * i, 4)
+    
+    A_z(0) = .Cells(10 + 5 * i, 5): A_z(1) = .Cells(11 + 5 * i, 5)
+    A_z(2) = .Cells(12 + 5 * i, 5): A_z(3) = .Cells(13 + 5 * i, 5)
+  End With
+  ret = myModel.AreaObj.AddByCoord(4, A_x, A_y, A_z, SlbName, "Slab20", SlbName)
+Next i
+
+'Refresh View
+ret = myModel.View.RefreshView()
+
+
+End Sub
